@@ -1,5 +1,7 @@
 # Standard library
 import datetime
+import json
+import unittest
 
 # Imports from dictshield proper
 from dictshield.document import Document
@@ -18,20 +20,38 @@ class Post(Document):
 
 
 class Public(WhitelistView):
-    fields = ['name', 'body']
+    fields = ['name', 'body', 'to_json']
 
 
-entry = Post(name='Some clever post name',
-             body='blah blah blah',
-             username='marca',
-             password='password',
-             created_time=datetime.datetime.now())
-print("entry.name = %r" % entry.name)
-print("entry.created_time = %r" % entry.created_time)
-print("entry.password = %r" % entry.password)
-print("")
+class DictViewTests(unittest.TestCase):
 
-entry_view = Public(entry)
+    entry = Post(name='Some clever post name',
+                 body='blah blah blah',
+                 username='marca',
+                 password='password',
+                 created_time=datetime.datetime.now())
 
-print("entry_view.name = %r" % entry_view.name)
-print("entry_view.password = %r" % entry_view.password)
+    def setUp(self):
+        self.entry_view = Public(self.entry)
+
+    def test_has_name(self):
+        self.assertEquals(self.entry_view.name, 'Some clever post name')
+
+    def test_doesnt_have_password(self):
+        try:
+            self.entry_view.password
+            self.fail()
+        except AttributeError:
+            pass
+
+    def test_to_json(self):
+        json_text = self.entry_view.to_json()
+        a_dict = json.loads(json_text)
+        self.assertEquals(a_dict['name'], 'Some clever post name')
+        self.assertEquals(a_dict['body'], 'blah blah blah')
+
+        try:
+            a_dict['password']
+            self.fail()
+        except KeyError:
+            pass
